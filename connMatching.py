@@ -1,113 +1,112 @@
+#TODO:
+#For the connectives labeled manually, make them case sensitive
+
 import nltk, cPickle, json
 parses = json.loads(open('pdtb-parses.json').read())
 
 a = []
 
 default = {
-"as": [
-		"as an alternative", 
-		"as if", 
-		"as long as", 
-		"much as", 
-		"as soon as",
-		"as well", 
-		"insofar as", 
-		"largely as a result", 
-		"as", 
-		"as a result",  
-		"as long as", 
-		"as much as",
-		"as though",
-		"as well" 
-		"especially as",
-		"even as", 
-		"just as",
-		"just as soon as",
-		"much as",
-		"only as long as",
-		"particularly as",
-		"so much as"
-],
+"as": {
+		"as an alternative":"as an alternative",
+		"as if":"as if",
+		"as long as":"as long as",
+		"much as":"much as",
+		"as soon as":"as soon as",
+		"as well":"as well",
+		"insofar as":"insofar as",
+		"largely as a result":"as a result", 
+		"as":"as", 
+		"as a result":"as a result",
+		"as long as":"as long as", 
+		"as much as":"much as",
+		"as though":"as though",
+		"as well":"as well", 
+		"especially as":"as",
+		"even as":"as", 
+		"just as":"as",
+		"just as soon as":"as soon as",
+		"much as":"much as",
+		"only as long as":"as long as",
+		"particularly as":"as"
+},
 
-"by": [
-		"by comparison", 
-		"by contrast", 
-		"by then"
-],
+"by": {
+		"by comparison":"by comparision",
+		"by contrast":"by contrast",
+		"by then":"by then"
+},
 
-"for": [
-		"for", 
-		"for example",
-		"for instance"
-],
+"for": {
+		"for":"for",
+		"for example":"for example",
+		"for instance":"for instance":
+},
 
-"in": [
-		"in addition", 
-		"in contrast", 
-		"in fact", 
-		"in other words", 
-		"in particular", 
-		"in short", 
-		"in sum", 
-		"in the end",
-		"in the meantime", 
-		"in the meanwhile",
-		"in turn",
-		"in the end",
-		"in contrast",
-		"in start contrast",
-		"in the mean time"
-],
+"in": {
+		"in addition":"in addition",
+		"in contrast":"in contrast",
+		"in fact":"in fact",
+		"in other words":"in other words",
+		"in particular":"in particular",
+		"in short":"in short", 
+		"in sum":"in sum", 
+		"in the end":"in the end",
+		"in turn":"in turn",
+		"in the end":"in the end",
+		"in contrast":"in contrast",
+		"in start contrast":"in contrast",
+		"in the mean time":"in the mean time"
+},
 
-"if": [
-		"as if",
-		"even if",
-		"if",
-		"if only",
-		"if then",
-		"when and if",
-		"as if",
-		"especially if",
-		"particularly if",
-		"even if",
-		"if and when",
-		"only if",
-		"typically, if"
-],
+"if": {
+		"as if":"as if",
+		"even if":"even if",
+		"if":"if",
+		"if only":"if",
+		"when and if":"when and if",
+		"as if":"as if",
+		"especially if":"if",
+		"particularly if":"if",
+		"even if":"if",
+		"if and when":"if and when",
+		"only if":"if",
+		"typically, if":"if"
+},
 
-"much": [
-		"as much as",
-		"much as",
-		"so much as"
-],
+"much": {
+		"as much as":"much as",
+		"much as":"much as",
+		"so much as":"much as"
+},
 
-"on": [
-		"on the contrary", 
-		"on the one hand", 
-		"on the other hand", 
-],
+"on": {
+		"on the contrary":"on the contrary",
+		"on the one hand":"on the one hand",
+		"on the other hand":"on the other hand"
+},
 
-"so": [
-		"so", 
-		"so that"
-],
+"so": {
+		"so":"so", 
+		"so that":"so that"
+},
 
-"when": [
-		"at least not when", 
-		"back when", 
-		"even when", 
-		"just when", 
-		"only when",
-		"at least when", 
-		"especially when", 
-		"even when",
-		"except when", 
-		"just when", 
-		"only when", 
-		"particularly when", 
-		"usually when",
-		"when",
-]
+"when": {
+		"at least not when":"when",
+		"back when":"when",
+		"even when":"when",
+		"just when":"when",
+		"only when":"when",
+		"at least when":"when",
+		"especially when":"when",
+		"even when":"when",
+		"except when":"when", 
+		"just when":"when", 
+		"only when":"when", 
+		"particularly when":"when", 
+		"usually when":"when",
+		"when":"when",
+}
 }
 
 
@@ -163,9 +162,10 @@ for doc in parses:
 					prevWord = leaves[leaves.index(firstWord.lower())-1]
 					if prevWord == 'in':
 						connective = 'in ' + connective
+				connectiveHead = word
 
 
-			elif word in ['afterward', 'accordingly', 'additionally', 'also', 'alternatively', 'although', 'because', 'simultaneously', 'since', 'thereafter', 'until']:
+			elif word in ['afterward', 'afterwards', 'accordingly', 'additionally', 'also', 'alternatively', 'although', 'because', 'simultaneously', 'since', 'thereafter', 'until']:
 				connective = ''
 				try:
 					index = leaves.index(word)
@@ -187,10 +187,12 @@ for doc in parses:
 						prevWord = leaves[leaves.index(firstWord.lower())-1]
 						if prevWord == 'in':
 							connective = 'in ' + connective
+				connectiveHead = word
 
 
 			elif word in ['besides', 'but', 'consequently', 'conversely', 'earlier', 'else', 'except', 'finally', 'further', 'furthermore', 'hence', 'however', 'indeed', 'instead', 'lest', 'likewise', 'meantime', 'meanwhile', 'moreover', 'nevertheless', 'next', 'nonetheless', 'nor', 'once', 'or', 'otherwise', 'overall',  'plus', 'previously', 'rather', 'regardless', 'separately', 'similarly', 'specifically', 'still', 'then', 'thereby', 'therefore', 'though', 'thus', 'till', 'ultimately', 'unless', 'whereas', 'while', 'yet']:
 				connective = ''
+				connectiveHead = word
 				try:
 					index = leaves.index(word)
 				except ValueError:
@@ -211,6 +213,10 @@ for doc in parses:
 					prevWord = leaves[index-1]
 					if prevWord == 'even':
 						word = prevWord + ' ' + word
+				if (word == 'meantime') or (word == 'meanwhile'):
+					prevWord = leaves[index-1]+' '+leaves[index-2]
+					if prevWord == 'in the':
+						word = prevWord + ' ' + word
 				connective = word
 
 
@@ -224,26 +230,40 @@ for doc in parses:
 					connective = possibleConnectives[l.index(max(l))]
 				except ValueError:
 					pass
-
-			elif word == 'either':
-				nextWord = leaves[leaves.index('either')+1]
-				if nextWord == 'or':
-					connective = 'either or'
+				connectiveHead = default[word][connective]
+				if word == 'if':
+					if 'then' in leaves[leaves.index('if'):]:
+						connective = 'if then'
+						connectiveHead = 'if then'
+				if connective == 'on the one hand':
+					if 'on the other hand' in ' '.join(leaves):
+						connective = "On the one hand On the other hand"
+						connectiveHead = "on the one hand on the other hand"
 
 			elif word == 'insofar':
 				nextWord = leaves[leaves.index('insofar')+1]
 				if nextWord == 'as':
 					connective = 'insofar as'
-
-			elif word == 'neither':
-				nextWord = leaves[leaves.index('neither')+1]
-				if nextWord == 'nor':
-					connective = 'neither nor'
+					connectiveHead = 'insofar as'
 
 			elif word == 'now':
 				nextWord = leaves[leaves.index('now')+1]
 				if nextWord == 'that':
+					connective = 'now that'
+					connectiveHead = 'now that'
+
+			elif word == 'neither':
+				if 'nor' in leaves[leaves.index('neither'):]:
 					connective = 'neither nor'
+					connectiveHead = 'neither nor'
+
+			elif word == 'either':
+				if 'or' in leaves[leaves.index('either'):]:
+					connective = 'either or'
+					connectiveHead = 'either or'
+
+			
+
 			if connective != '':
 				a.append((connective, ptree, sentence['dependencies']))
 
