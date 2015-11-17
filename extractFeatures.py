@@ -93,13 +93,13 @@ def parseFeatures(relation):
 				print e.message
 		else:
 			try:
-				lca_loc1 = lca(ptree, leaf_index)
+				lca_loc1 = lca(ptree, leaf_index[:index])
 				ptree1 = ptree[lca_loc1]
 				getproductionRules(ptree1)
 			except IndexError as e:
 				print e.message
 			try:
-				lca_loc2 = lca(ptree, leaf_index)
+				lca_loc2 = lca(ptree, leaf_index[index:])
 				ptree2 = ptree[lca_loc2]
 				getproductionRules(ptree2)
 			except IndexError as e:
@@ -147,20 +147,21 @@ def parseFeatures(relation):
 				print e.message
 		else:
 			try:
-				lca_loc1 = lca(ptree, leaf_index)
+				lca_loc1 = lca(ptree, leaf_index[:index])
 				ptree1 = ptree[lca_loc1]
 				getproductionRules(ptree1)
 			except IndexError as e:
 				print e.message
 			try:
-				lca_loc2 = lca(ptree, leaf_index)
+				lca_loc2 = lca(ptree, leaf_index[index:])
 				ptree2 = ptree[lca_loc2]
 				getproductionRules(ptree2)
 			except IndexError as e:
 				print e.message
 		dependencyRule=[]
 		leaves = ptree.leaves()
-		leaves = leaves[leaf_index[0]:leaf_index[index-1]+1] + leaves[leaf_index[index]:leaf_index[-1]]
+		if index!=0:
+			leaves = leaves[leaf_index[0]:leaf_index[index-1]+1] + leaves[leaf_index[index]:leaf_index[-1]]
 		for dependency in dependencies:
 			if (dependency[1][:-2] in leaves) and (dependency[2][:-2] in leaves):
 				dependencyRule.append(dependency)
@@ -171,23 +172,23 @@ def parseFeatures(relation):
 	featureVector={}
 	for feature in featureList:
 		featureVector[feature]=None
-	for feature in arg1productionRules:
+		if feature in arg1productionRules:
+			if feature in arg2productionRules:
+				featureVector[feature]='both'
+			else:
+				featureVector[feature]='arg1'
 		if feature in arg2productionRules:
-			featureVector[feature]='both'
-		else:
-			featureVector[feature]='arg1'
-	for feature in arg2productionRules:
-		if feature not in arg1productionRules:
-			featureVector[feature]='arg2'
-	for feature in arg1dependencyRules:
+			if feature not in arg1productionRules:
+				featureVector[feature]='arg2'
+		if feature in arg1dependencyRules:
+			if feature in arg2dependencyRules:
+				featureVector[feature]='both'
+			else:
+				featureVector[feature]='arg1'
 		if feature in arg2dependencyRules:
-			featureVector[feature]='both'
-		else:
-			featureVector[feature]='arg1'
-	for feature in arg2dependencyRules:
-		if feature not in arg1dependencyRules:
-			featureVector[feature]='arg2'
-	labelSet.append(relation['Sense'])
+			if feature not in arg1dependencyRules:
+				featureVector[feature]='arg2'
+	labelSet.append(relation['Sense'][0].split('.')[0])
 	featureSet.append(featureVector)
 
 

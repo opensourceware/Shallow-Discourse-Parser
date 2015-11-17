@@ -1,5 +1,5 @@
 import nltk
-import josn
+import json
 import cPickle
 
 discourseAdverbial = ['accordingly', 'additionally', 'afterwards', 'also', 'alternatively', 'as a result',
@@ -23,6 +23,39 @@ subordinatingConnective = ['after', 'although', 'as', 'as if', 'as long as', 'as
 'before', 'before and after', 'for', 'however', 'if', 'if and when', 'insofar as',
 'lest', 'much as', 'now that', 'once', 'since', 'so', 'so that', 'though', 'till', 'unless',
 'until', 'when', 'when and if', 'while']
+
+
+def clauseProcessing(string):
+	string = string.strip()
+
+	punct = [' ...', ' ,', ' :', ' ;', ' ?', ' !', ' -', ' ~', ' .']
+	for item in punct:
+		while item in string:
+			string = string.replace(item, item.strip())
+
+	symbols = ['$ ', '# ', ' %']
+	for item in symbols:
+		while item in string:
+			string = string.replace(item, item.strip())
+
+	appos = [" 's", " n't", " 're"]
+	for item in appos:
+		while item in string:
+			string = string.replace(item, item.strip())
+
+brackets = ['-LRB- ', '-LCB- ', '-RRB-', '-RCB-']
+	for item in brackets:
+		while item in string:
+			if item == '-LRB- ':
+				string = string.replace(item, ' (')
+			if item == '-RRB-':
+				string = string.replace(item, ')')
+			if item == '-LCB- ':
+				string = string.replace(item, ' {')
+			if item == '-RCB-':
+				string = string.replace(item, '}')
+
+	return string
 
 
 def lca(ptree,leaf_index):
@@ -80,12 +113,23 @@ def path(conn, clause):
 
 def pruning(ptree, indices):
 	clauses = []
+	leaves = ptree.leaves()
 	if len(indices) == 1:
 		lca_loc = ptree.leaf_treeposition(indices[0])[:-1]
 	else:
 		lca_loc = lca(ptree, indices)
+		connLastWord = ptree.leaf_treeposition(indices[-1])[:-1]
+		connFirstWord = ptree.leaf_treeposition(indices[0])[:-1]
+		clause = ptree[connFirstWord]
+		while (clause.left_sibling() != None):
+			clause = clause.left_sibling()
+			clauses.insert(0, ((clause, 'left')))
+		clause = ptree[connLastWord]
+		while (clause.right_sibling() != None):
+			clause = clause.right_sibling()
+			clauses.append((clause, 'right'))
 	clause = ptree[lca_loc]
-	clauses.append(clause)
+
 	while (clause.parent().label() != ''):
 		currclause = clause
 		while (clause.left_sibling() != None):
@@ -99,22 +143,41 @@ def pruning(ptree, indices):
 	return clauses
 
 
-def clauseExtractFeatures(clauses, connHead, ptree, agr1, arg2):
+def clauseExtractFeatures(clauses, connHead):
 
-	for clause in clauses:
-		if (len(clause) == 1):
-			connective = clauses.pop(clauses.index(clause))
-			break
-	c = connective
-	i = 0
-	while (c.left_sibling() != None):
-		c = c.left_sibling()
-		leftSibNo += 1
-	i = 0
-	c = connective
-	while (c.right_sibling() != None):
-		c = c.right_sibling()
-		rightSibNo += 1
+	featureSet = []
+	if len(indices) == 1:
+		lca_loc = ptree.leaf_treeposition(indices[0])[:-1]
+		c = ptree[lca_loc]
+		leftSibNo = 0
+		while (c.left_sibling() != None):
+			c = c.left_sibling()
+			leftSibNo += 1
+		c = ptree[lca_loc]
+		rightSibNo = 0
+		while (c.right_sibling() != None):
+			c = c.right_sibling()
+			rightSibNo += 1
+		connective = ptree[lca_loc]
+	else:
+		lca_loc = lca(ptree, indices)
+		connLastWord = ptree.leaf_treeposition(indices[-1])[:-1]
+		connFirstWord = ptree.leaf_treeposition(indices[0])[:-1]
+		c = ptree[connFirstWord]
+		leftSibNo = 0
+		while (c.left_sibling() != None):
+			c = c.left_sibling()
+			leftSibNo += 1
+		c = ptree[connLastWord]
+		rightSibNo = 0
+		while (c.right_sibling() != None):
+			c = c.right_sibling()
+			rightSibNo += 1
+#		leaves = ptree.leaves()
+#		head = [leaves.index(item) for item in connHead.split(' ')]
+#		lca_loc = lca(ptree, head)
+		connective = ptree[lca_loc]
+
 
 	if connHead in discourseAdverbial:
 		connCat = 'Discourse Adverbial'
@@ -141,9 +204,9 @@ def clauseExtractFeatures(clauses, connHead, ptree, agr1, arg2):
 			clauseRSPOS = 'NULL'
 		clauseContext = clausePOS+'-'+clauseParentPOS+'-'+clauseLSPOS+'-'+clauseRSPOS
 
-		conn2clausePath = path(conn, clause)
+		conn2clausePath = path(connective, clause)
 
-		featureVector = {'connectiveString':conn, 'leftSibNo':leftSibNo, 'rightSibNo':rightSibNo, 'connCategory':connCat, 'clauseRelPosition':clauseRelPosition, 'clauseContext':clauseContext, 'conn2clausePath':conn2clausePath}
+		featureVector = {'connectiveString':connHead, 'connectivePOS':connective.label(), 'leftSibNo':leftSibNo, 'rightSibNo':rightSibNo, 'connCategory':connCat, 'clauseRelPosition':clauseRelPosition, 'clausePOS':clausePOS, 'clauseContext':clauseContext, 'conn2clausePath':conn2clausePath}
 
 		leaves = clause.leaves()
 		clause = ' '.join(leaves)
@@ -167,32 +230,75 @@ def clauseExtractFeatures(clauses, connHead, ptree, agr1, arg2):
 		else:
 			label = 'NULL'
 
-		featureSet.append((featureVector, label))
+		featureSet.append((featureVector, clause))
+	return featureSet
 
+#global featureSet
+#featureSet = []
 
 if __name__ == "__main__":
-	pdtb = 
-	parses = 
-	global featureSet
-	featureSet = []
 
+	predictedLabelsArg1 = []
+	LabelsArg1 = []
+	predictedLabelsArg2 = []
+	LabelsArg2 = []
+	trainSet = cPickle.load(open('SSFeatures.p','r'))
+	classifier = nltk.classify.NaiveBayesClassifier(trainSet)
+	pdtb = cPickle.load(open('dev.p', 'r'))
+	parses = json.loads(open('dev-parses.json').read())
 	for relation in pdtb:
-		if relation['Type'] == 'Explicit':
-			if (relation['Arg1']['TokenList'][0][3] == relation['Arg2']['TokenList'][0][3]):
-				doc = relation['DocID']
-				sentenceOffSet = relation['Arg1']['TokenList'][0][3]
-				s = parses[doc]['sentences'][sentenceOffSet]['parsetree']
-				ptree = nltk.ParentedTree.fromstring(s)
-				indices = [token[4] for token in relation['Connective']['TokenList']]
+		if (relation['Type'] == 'Explicit') and (relation['Arg1']['TokenList'][0][3] == relation['Arg2']['TokenList'][0][3]):
+			doc = relation['DocID']
+			sentenceOffSet = relation['Arg1']['TokenList'][0][3]
+			s = parses[doc]['sentences'][sentenceOffSet]['parsetree']
+			ptree = nltk.ParentedTree.fromstring(s)
+			indices = [token[4] for token in relation['Connective']['TokenList']]
+			try:
 				clauses = pruning(ptree, indices)
 				arg1 = relation['Arg1']['RawText']
 				arg2 = relation['Arg2']['RawText']
-				clauseExtractFeatures(clauses, relation['ConnectiveHead'], ptree, arg1, arg2)
+				fSet = clauseExtractFeatures(clauses, relation['ConnectiveHead'])
+				devFeatures = []
+				clauses = []
+				for item in fSet:
+					devFeatures.append(item[0])
+					clauses.append(item[1])
+				l = classifier.classify_many(devFeatures)
+				Arg1 = ''
+				Arg2 = ''
+				for num, label in enumerate(l):
+					if label=='Arg1':
+						Arg1 += clauses[num]+' '
+					elif label=='Arg2':
+						Arg2 += clauses[num]+' '
+				Arg1 = clauseProcessing(Arg1)
+				Arg2 = clauseProcessing(Arg2)
+				predictedLabelsArg1.append(Arg1)
+				LabelsArg1.append(arg1)
+				predictedLabelsArg2.append(Arg2)
+				LabelsArg2.append(arg2)
+			except IndexError as e:
+				print relation
+				print ptree
+				print indices
 
-	cPickle.dump(featureSet, open('SSFeatures.p','wb'))
+	#print sklearn.metrics.f1_score(predictedLabelsArg1, LabelsArg1, average='weighted')
+	#print sklearn.metrics.f1_score(predictedLabelsArg2, LabelsArg2, average='weighted')
+	cPickle.dump(predictedLabelsArg1, open('predictedLabelsArg1.p','wb'))
+	cPickle.dump(LabelsArg1, open('LabelsArg1.p','wb'))
+	cPickle.dump(predictedLabelsArg2, open('predictedLabelsArg2.p','wb'))
+	cPickle.dump(LabelsArg2, open('LabelsArg2.p','wb'))
 
+#LabelsArg2=cPickle.load(open('LabelsArg2.p','r'))
+#predictedLabelsArg2=cPickle.load(open('predictedLabelsArg2.p','r'))
+#LabelsArg1=cPickle.load(open('LabelsArg1.p','r'))
+#predictedLabelsArg1=cPickle.load(open('predictedLabelsArg1.p','r'))
 
+#for num, item in enumerate(LabelsArg2):
+#     if item != predictedLabelsArg2[num]:
+#             print str(num)+'\t'+item+'\t'+predictedLabelsArg2[num]
 
-
-
+#for num, item in enumerate(LabelsArg1):
+#     if item != predictedLabelsArg1[num]:
+#             print str(num)+'\t'+item+'\t'+predictedLabelsArg1[num]
 
