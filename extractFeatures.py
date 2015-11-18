@@ -188,9 +188,8 @@ def parseFeatures(relation):
 		if feature in arg2dependencyRules:
 			if feature not in arg1dependencyRules:
 				featureVector[feature]='arg2'
-	labelSet.append(relation['Sense'][0].split('.')[0])
+	labelSet.append(relation['Sense'][0].split('.'))
 	featureSet.append(featureVector)
-
 
 
 def getproductionRules(ptree):
@@ -218,12 +217,33 @@ def getdependencyRules(dependencies):
 			dependencyRules.append(feature)
 
 
+def addbrownFeatures(relation):
+        arg1 = relation['Arg1']['RawText'].split()
+        arg2 = relation['Arg2']['RawText'].split()
+        for word in arg1:
+            try:
+                arg1Cluster.append(brownClusters[word]['Cluster'])
+            except KeyError:
+                continue
+        for word in arg2:
+            try:
+                arg2Cluster.append(brownClusters[word]['Cluster'])
+            except KeyError:
+		continue
+        cartesianProduct = [(a,b) for a in arg1Cluster for b in arg2Cluster]
+        for pair in brownFeatures:
+		featureSet[-1][pair] = False
+		if pair in cartesianProduct:
+			featureSet[-1][pair] = True
+
 
 if __name__ == '__main__':
 	#features=[]
 	pdtb = cPickle.load(open('dev.p','r'))
 	parses = json.loads(open('dev-parses.json').read())
 	subjectivity = json.loads(open('mpqa_subj_05.json').read())
+	featureList = cPickle.load(open('featureList.p', 'rb'))
+	data1000 = cPickle.load(open('brownFeatures1000.p','rb'))
 	featureSet=[]
 	labelSet=[]
 	dependencyRules=[]
@@ -231,13 +251,25 @@ if __name__ == '__main__':
 	#for doc in parses:
 	#	featureList={}
 	#	getsubjectivityFeatures()
-	featureList = cPickle.load(open('featureList.p', 'rb'))
+
+	brownClusters = {}
+	brown = codecs.open('brown_cluster_1000','r',encoding='utf-8')
+	for line in brown.readlines():
+	word = line.split()
+	brownClusters[word[1]] = {u'Cluster':word[0], u'wordFreq':word[2]}
+
+	brownFeatures = []
+	for item in data1000:
+		if data1000[item] > 50:
+			brownFeatures.append(item)
+
 	for relation in pdtb:
 		productionRules=[]
 		dependencyRules=[]
 		if (relation['Type'] == 'Explicit') or (relation['Type'] == 'Implicit'):
 			parseFeatures(relation)
 			getsubjectivityFeatures(relation)
+			addbrownFeatures(relation)
 	f = open('devImplicitFeatures.p','wb')
 	cPickle.dump(featureSet, f)
 	f.close()
