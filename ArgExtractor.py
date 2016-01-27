@@ -25,7 +25,7 @@ subordinatingConnective = ['after', 'although', 'as', 'as if', 'as long as', 'as
 'lest', 'much as', 'now that', 'once', 'since', 'so', 'so that', 'though', 'till', 'unless',
 'until', 'when', 'when and if', 'while']
 
-																																																																																									
+
 def clauseProcessing(array):
 	string = ' '.join(array)
 	string = string.strip()
@@ -135,43 +135,27 @@ def traverse(ptree):
 #
 				global pos
 				pos = []
-				#clauseIndex(tree, child)
-				#lca_loc = pos
 				startIndex = 0
 				for item in clauses:
 					if (item[0] in childString):
 						i = childString.index(item[0]) + len(item[0])
 						if i>startIndex:
 							startIndex = i
-				print childString
-				print startIndex
-				print clauses
-				print childString[startIndex:]
+				childString = childString.strip('.')
 				if len(childString[startIndex:]) > 0:
-					#print childString
 					try:
-						print 'before try'
 						indices = getIndices(childString, startIndex, len(childString))
 						lca_loc_1 = tree.leaf_treeposition(indices[0])
 						lca_loc = lca(tree, indices)
-						print lca_loc, startIndex
-						print tree[lca_loc]
 						if (type(tree[lca_loc]) != unicode):
-							print 'IF TRUE'
 							if (tree[lca_loc].label() != 'S'):
 								lca_loc = lca_loc[:-1]
-						print indices, lca_loc
-						print 'after try'
 					except UnboundLocalError:
-						print 'before except'
 						clauseIndex(tree, child)
 						lca_loc_1 = lca_loc
 						lca_loc_1.append(0)
 						lca_loc_1 = tuple(lca_loc_1)
 						lca_loc = tuple(pos)
-						print 'after except'
-					print 'CLAUSE APPEND ALERT!!!!!!!!!!!!!!!!!!!!!'
-					print (childString[startIndex:], lca_loc)
 					clauses.append((childString[startIndex:], lca_loc, lca_loc_1))
 				else:
 					clauseIndex(tree, child)
@@ -185,8 +169,6 @@ def traverse(ptree):
 						parentString = clauseProcessing(parentLeaves)
 #
 						index = parentString.index(childString)
-						print childString
-						print parentString
 						if (index != 0):
 							startIndex = 0
 							for item in clauses:
@@ -194,86 +176,66 @@ def traverse(ptree):
 									i = parentString.index(item[0]) + len(item[0])
 									if i>startIndex:
 										startIndex = i
-							print parentString
-							print childString
-							print startIndex, index
 							if (index >= startIndex):
-								if (len(parentString[startIndex:index]) > 0):
-									#print 'FULL STRING'
-									#print parentString, startIndex, index
+								if (len(parentString[startIndex:index].strip()) > 0):
 									indices = getIndices(parentString, startIndex, index)
 									lca_loc_1 = tree.leaf_treeposition(indices[0])
-									#print indices
 									lca_loc = lca(tree, indices)
-									print 'CLAUSE APPEND ALERT!!!!!!!!!!!!!!!!!!!!!'
 									if (type(tree[lca_loc]) != unicode):
-										print 'IF TRUE'
 										if (tree[lca_loc].label() != 'S'):
 											lca_loc = lca_loc[:-1]
-									print (parentString[startIndex:index], lca_loc)
 									clauses.insert(-1, (parentString[startIndex:index].strip(), lca_loc, lca_loc_1))
 							else:
-								print 'elseWHOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO'
 								clauses.insert(-1, (parentString[:index].strip(), lca_loc))
 						break
-#	for item in clauses:
-#		punctMarks = [',', ';', ':', '/', '?', '!', '~', '...']
-#		treeString = clauseProcessing(tree.leaves())
-#		for p in punctMarks:
-#			if p in item[0]:
-#				array = item[0].split(p)
-#				for i in array:
-#					index = treeString.index(i)
-#					l = len(treeString[:index].split(' '))
-#					indices = [x for x in range(l, l+len(i.strip().split(' ')))]
-#					clauses.append((i.strip(), lca(tree, indices)))
-				
+
 
 def getIndices(childString, startIndex, index):
 	punct = [',', ';', ':', '/', '?', '!', '~', '...', '$', '#', '%', "'s", "n't", "'re"]
-	#print childString
-	#print startIndex, index
 	ptree = clauseProcessing(tree.leaves())
 	ind = ptree.index(childString)
-	k = ptree[:ind].strip().split(' ')
-	if (k == ['']):
+	leaves = ptree[:ind].strip().split(' ')
+	#split a null string puts a null object 
+	#in the list which makes the list size=1
+	if (leaves == ['']):
 		k = 0
 	else:
-		k = len(k)
+		k = len(leaves)
 	for p in punct:
 		i = -1
 		while p in ptree[i+1:ind]:
 			i += ptree[i+1:ind].index(p)+1
 			k += 1
-	l = childString[:startIndex].strip().split(' ')
-	if (l == ['']):
+	leaves = childString[:startIndex].strip().split(' ')
+	if (leaves == ['']):
 		l = 0
 	else:
-		l = len(l)
+		l = len(leaves)
 	for p in punct:
 		i = -1
 		while p in childString[i+1:startIndex]:
 			i += childString[i+1:startIndex].index(p)+1
 			l += 1
-	m = childString[startIndex:index].strip().split(' ')
-	if (m == ['']):
+	leaves = childString[startIndex:index].strip().split(' ')
+	if (leaves == ['']):
 		m = 0
 	else:
-		m = len(m)
+		m = len(leaves)
 	for p in punct:
 		while p in childString[startIndex+1:index]:
 			startIndex += childString[startIndex+1:index].index(p)+1
 			m += 1
+#	print k, l, m
 	indices = [x for x in range(k+l, k+l+m)]
 	return indices
 
 
-def clauseIndex(ptree, clause):
+def clauseIndex(tree, clause):
 	global flag
 	flag = False
-	global pos
-	pos = []
-	for num, child in enumerate(ptree):
+	#global pos
+	#pos = []
+	for num, child in enumerate(tree):
 		if (child != clause) and (type(child) != unicode):
 			#print child
 			#time.sleep(2)
@@ -410,75 +372,39 @@ def clauseExtractFeatures(clauses, connHead):
 
 if __name__ == "__main__":
 
+	global clauses
+	global tree
 	predictedLabelsArg1 = []
 	LabelsArg1 = []
 	predictedLabelsArg2 = []
 	LabelsArg2 = []
-	trainSet = cPickle.load(open('SSFeatures.p','r'))
-	classifier = nltk.classify.NaiveBayesClassifier(trainSet)
 	pdtb = cPickle.load(open('dev.p', 'r'))
 	parses = json.loads(open('dev-parses.json').read())
+	file = open('clauses.txt', 'a')
 	for relation in pdtb:
 		if (relation['Type'] == 'Explicit') and (relation['Arg1']['TokenList'][0][3] == relation['Arg2']['TokenList'][0][3]):
 			doc = relation['DocID']
 			sentenceOffSet = relation['Arg1']['TokenList'][0][3]
 			s = parses[doc]['sentences'][sentenceOffSet]['parsetree']
 			ptree = nltk.ParentedTree.fromstring(s)
-			global tree
 			tree = ptree
+			leaves = tree.leaves()
+			loc = tree.leaf_treeposition(len(leaves)-1)[:-1]
+			del tree[loc]
 			indices = [token[4] for token in relation['Connective']['TokenList']]
-			try:
-				_clauses = traverse(tree)
-				position = [item[2] for item in _clauses].sort()
-				clauses = []
-				for item in _clauses:
-					for p in position:
-						if item[2] == p:
-							clauses.append(item[2])
-				arg1 = relation['Arg1']['RawText']
-				arg2 = relation['Arg2']['RawText']
-				fSet = clauseExtractFeatures(clauses, relation['ConnectiveHead'])
-				devFeatures = []
-				clauses = []
-				for item in fSet:
-					devFeatures.append(item[0])
-					clauses.append(item[1])
-				l = classifier.classify_many(devFeatures)
-				Arg1 = ''
-				Arg2 = ''
-				for num, label in enumerate(l):
-					if label=='Arg1':
-						Arg1 += clauses[num]+' '
-					elif label=='Arg2':
-						Arg2 += clauses[num]+' '
-				Arg1 = Arg1.strip(' ')
-				Arg2 = Arg2.strip(' ')
-				predictedLabelsArg1.append(Arg1)
-				LabelsArg1.append(arg1)
-				predictedLabelsArg2.append(Arg2)
-				LabelsArg2.append(arg2)
-			except IndexError as e:
-				print relation
-				print ptree
-				print indices
-
-	#print sklearn.metrics.f1_score(predictedLabelsArg1, LabelsArg1, average='weighted')
-	#print sklearn.metrics.f1_score(predictedLabelsArg2, LabelsArg2, average='weighted')
-	cPickle.dump(predictedLabelsArg1, open('predictedLabelsArg1.p','wb'))
-	cPickle.dump(LabelsArg1, open('LabelsArg1.p','wb'))
-	cPickle.dump(predictedLabelsArg2, open('predictedLabelsArg2.p','wb'))
-	cPickle.dump(LabelsArg2, open('LabelsArg2.p','wb'))
-
-	LabelsArg2=cPickle.load(open('LabelsArg2.p','r'))
-	predictedLabelsArg2=cPickle.load(open('predictedLabelsArg2.p','r'))
-	LabelsArg1=cPickle.load(open('LabelsArg1.p','r'))
-	predictedLabelsArg1=cPickle.load(open('predictedLabelsArg1.p','r'))
-
-	for num, item in enumerate(LabelsArg2):
-	     if item != predictedLabelsArg2[num]:
-		     print str(num)+'\t'+item+'\t'+predictedLabelsArg2[num]
-
-	for num, item in enumerate(LabelsArg1):
-	     if item != predictedLabelsArg1[num]:
-		     print str(num)+'\t'+item+'\t'+predictedLabelsArg1[num]
-
+			clauses = []
+			traverse(tree)
+			print clauses
+			position = [item[2] for item in clauses]
+			position.sort()
+			_clauses = []
+			for item in clauses:
+				for p in position:
+					if item[2] == p:
+						_clauses.append(item)
+			print ptree
+			print _clauses
+			print s
+	#		file.write(tree)
+#			file.write(_clauses)
+	file.close()
