@@ -1,4 +1,5 @@
 import nltk
+from nltk.corpus import stopwords
 import conn_head_mapper
 import json
 import cPickle
@@ -41,6 +42,8 @@ def getproductionRules(ptree):
 
 def getdependencyRules(dependencies):
 	for rule in dependencies:
+        if (rule[1].split('-')[0] in stopSet) or (rule[2].split('-')[0] in stopSet):
+            continue
 		dRule = rule[0]
 		if rule[1][-1] < rule[2][-1]:
 			orientation = 'right'
@@ -55,6 +58,7 @@ def getdependencyRules(dependencies):
 
 if __name__ == '__main__':
 	#features=[]
+    stopSet = stopwords.words("english")
 	pdtb = cPickle.load(open('pdtb.p','r'))
 	#subjectivity = json.loads(open('mpqa_subj_05.json').read())
 	dependencyRules={}
@@ -70,9 +74,13 @@ if __name__ == '__main__':
 			getdependencyRules(dependencies)
 			getproductionRules(ptree)
 	#	featureList.append
-	cPickle.dump(dependencyRules, open('dependencyRules.p','wb'))
-	cPickle.dump(productionRules, open('productionRules.p','wb'))
-
-
-
-
+    dependencyRules2 = dependencyRules
+    productionRules2 = productionRules
+    for item in dependencyRules:
+        if (dependencyRules[item] <= 10):
+            dependencyRules2.pop(item)
+    for item in productionRules:
+        if (productionRules[item] <= 10) or (productionRules[item] >= 70):
+            productionRules2.pop(item)
+	cPickle.dump(dependencyRules2, open('dependencyRules.p','wb'))
+	cPickle.dump(productionRules2, open('productionRules.p','wb'))
