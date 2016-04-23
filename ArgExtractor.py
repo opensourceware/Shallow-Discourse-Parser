@@ -12,7 +12,6 @@ class clauseExtractor:
 	
 	"""Takes parsetree of a sentence as input and returns clauses of the sentence."""
 
-
 	def __init__(self, tree):
 		self.tree = tree
 		self._clauses = []
@@ -304,7 +303,7 @@ class SSArgExtractor():
 			SSArgExtractor.featureSet.append((f[0], label))
 
 
-class PSArgExtractor(ClauseFeatExtractor):
+class PSArgExtractor():
 	"""Argument extractor for same sentence. The labels of this classifier are Arg1, Arg2 and None.
 	This class inherits from ClauseFeatExtractor which provides the skeleton of feature engineering.
 	SSArgExtractor and PSArgExtractor use the same features but provide different labels to its clauses."""
@@ -315,7 +314,7 @@ class PSArgExtractor(ClauseFeatExtractor):
 		self.arg2 = arg2
 
 	def extractClauseFeatures(self, clauses, connHead):
-		features = super(SSArgExtractor, self).extractClauseFeatures(clauses, connHead)
+		features = ClauseFeatExtractor.extractClauseFeatures(clauses, connHead)
 		for f in features:
 			if f[1] in arg2:
 				label = 'Arg2'
@@ -325,8 +324,10 @@ class PSArgExtractor(ClauseFeatExtractor):
 
 
 if __name__ == "__main__":
-	temp=0
-	temp2=0
+	SStemp=0
+	SStemp2=0
+	PStemp=0
+	PStemp2=0
 	predictedLabelsArg1 = []
 	LabelsArg1 = []
 	predictedLabelsArg2 = []
@@ -343,7 +344,7 @@ if __name__ == "__main__":
 			s = parses[doc]['sentences'][sentenceOffSet]['parsetree']
 			ptree = nltk.ParentedTree.fromstring(s)
 			indices = [token[4] for token in relation['Connective']['TokenList']]
-			temp2=temp2+1
+			SStemp2=SStemp2+1
 			try:
 				extr = clauseExtractor(ptree)
 				_clauses = extr.traverse(ptree)
@@ -355,18 +356,46 @@ if __name__ == "__main__":
 					for item in _clauses:
 						if item[2] == p:
 							clauses.append(item)
-				print clauses
+				#print clauses
 				arg1 = relation['Arg1']['RawText']
 				arg2 = relation['Arg2']['RawText']
 				SSArgextr = SSArgExtractor(arg1, arg2)
 				SSArgextr.extractClauseFeatures(clauses, relation['ConnectiveHead'])
 			except IndexError as e:
-				temp=temp+1
-				#print ptree
-				#print indices
-		#if (relation['Type'] == 'Explicit') and (relation['Arg1']['TokenList'][0][3] != relation['Arg2']['TokenList'][0][3]):
-	#print SSArgextr.featureSet
-	with open('argFeatures.p', 'wb') as f:
-		cPickle.dump(SSArgextr.featureSet, f)	
-	print 'temp count= ',temp
-	print 'temp2 count= ',temp2
+				SStemp=SStemp+1
+		elif (relation['Type'] == 'Explicit') and ((relation['Arg2']['TokenList'][0][3] - relation['Arg1']['TokenList'][0][3]) == 1):
+			doc = relation['DocID']
+			sentenceOffSet = relation['Arg1']['TokenList'][0][3]
+			s = parses[doc]['sentences'][sentenceOffSet]['parsetree']
+			ptree = nltk.ParentedTree.fromstring(s)
+			indices = [token[4] for token in relation['Connective']['TokenList']]
+			PStemp2=PStemp2+1
+			try:
+				extr = clauseExtractor(ptree)
+				_clauses = extr.traverse(ptree)
+				position = [item[2] for item in _clauses]
+				position.sort()
+				#print 'position',position,'\n'
+				clauses = []
+				for p in position:
+					for item in _clauses:
+						if item[2] == p:
+							clauses.append(item)
+				#print clauses
+				arg1 = relation['Arg1']['RawText']
+				arg2 = relation['Arg2']['RawText']
+				PSArgextr = PSArgExtractor(arg2)
+				PSArgextr.extractClauseFeatures(clauses, relation['ConnectiveHead'])
+			except IndexError as e:
+				PStemp=PStemp+1
+
+	with open('SSargFeatures.p', 'wb') as f:
+		cPickle.dump(SSArgextr.featureSet, f)
+	f.close()
+
+	with open('PSargFeatures.p', 'wb') as f1:
+		cPickle.dump(PSArgextr.featureSet, f1)	
+	f1.close()
+	print 'temp count= ',SStemp, PStemp
+	print 'temp2 count= ',SStemp2, PStemp2
+
