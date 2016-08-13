@@ -22,7 +22,7 @@ class ConnHeadMapper(object):
 					break
 		assert(len(head_connective_token_list) == len(indices))
 		return head_connective, indices	
-	
+
 	DEFAULT_MAPPING = {
 		"18 months after": "after", 
 		"25 years after": "after", 
