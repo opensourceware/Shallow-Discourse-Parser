@@ -4,6 +4,7 @@ import nltk
 import json
 import cPickle
 import conn_head_mapper
+from confusion_matrix import*
 
 def constructFeatures(discourseBank,treeBank):
     featureSet=[]
@@ -53,17 +54,44 @@ def constructFeatures(discourseBank,treeBank):
 
 
 
-if __name__=="__main__":
-    pdtb = cPickle.load(open('pdtb.p','r'))
-    parses = json.loads(open('pdtb-parses.json').read())
-    devpdtb = cPickle.load(open('dev.p', 'r'))
-    devparses = json.loads(open('dev-parses.json').read())
-    featureSets = constructFeatures(pdtb, parses)
-    cPickle.dump(featureSets, open('argPosFeatures2.p','wb'))
-    devfeatureSets = constructFeatures(devpdtb, devparses)
-    cPickle.dump(devfeatureSets, open('devargPosFeatures2.p','wb'))
+def fscore_conf(classifier,testSet):
+	conf_obj=ConfusionMatrix()
+        true_label=[]
+        predicted_label=[]
+        for i in testSet:
+        	true_label.append(i[1])
+		predicted_label.append(classifier.classify(i[0]))
+	conf_obj.add_list(predicted_label,true_label)
+	conf_obj.print_matrix()
+	f1_score=conf_obj.compute_average_f1()
+	print 'F1 score = ',f1_score,'\n'	
 
-    classifier = nltk.classify.NaiveBayesClassifier.train(featureSets)
+
+
+
+
+
+
+
+if __name__=="__main__":
+        trainpdtb = cPickle.load(open('/home/f2012687/temp_SDP_master_codes/pdtb.p','r'))
+        trainparses = json.loads(open('/home/f2012687/temp_SDP_master_codes/pdtb-parses.json').read())
+        devpdtb = cPickle.load(open('/home/f2012687/temp_SDP_master_codes/dev.p', 'r'))
+        devparses = json.loads(open('/home/f2012687/temp_SDP_master_codes/dev-parses.json').read())
+
+        trainfeatureSet = constructFeatures(trainpdtb, trainparses)
+        cPickle.dump(trainfeatureSet, open('argPosFeatures.p','wb'))
+        devfeatureSet = constructFeatures(devpdtb, devparses)
+        #cPickle.dump(devfeatureSet, open('devargPosFeatures2.p','wb'))
+	#classifier = nltk.classify.NaiveBayesClassifier.train(trainfeatureSet)
+	classifier=nltk.MaxentClassifier.train(trainfeatureSet)
+	print '......................................ON TRAINING DATA..................','\n'
+	fscore_conf(classifier,trainfeatureSet)
+	print 'Accuracy = ',nltk.classify.accuracy(classifier, trainfeatureSet),'\n'
+
+	print '......................................ON DEVELOPMENT DATA..................','\n'
+	fscore_conf(classifier,devfeatureSet)
+	print 'Accuracy = ',nltk.classify.accuracy(classifier, devfeatureSet),'\n'
+
 
     #classifier.prob_classify_many()
-    print nltk.classify.accuracy(classifier, devfeatureSets)
